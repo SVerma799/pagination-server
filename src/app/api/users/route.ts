@@ -1,3 +1,4 @@
+import { User } from "../../../../types/user";
 import clientPromise from "../../../../utils/connectDB";
 
 export const GET = async (req: any) => {
@@ -5,11 +6,11 @@ export const GET = async (req: any) => {
     headers: { "Content-Type": "application/json" },
     status: 200,
   });
+
+  ///  I will include the pagination over here...
 };
 
 export const POST = async (req: any) => {
-  const { name, password } = await req.json();
-
   try {
     const client = await clientPromise;
     if (!process.env.DB_NAME) {
@@ -25,9 +26,18 @@ export const POST = async (req: any) => {
     }
     const db = client.db(process.env.DB_NAME);
 
-    let myPost = await db.collection("users").insertOne({ name, password });
+    const users: User[] = [];
+    for (let i: number = 0; i < 100; i++) {
+      const name = `User ${i}`;
+      const email = `email${i}@gmail.com`;
+      const password = `password${i}`;
 
-    return new Response(JSON.stringify({ myPost }), {
+      users.push({ name, email, password });
+    }
+
+    const result = await db.collection<User>("users").insertMany(users);
+
+    return new Response(JSON.stringify({ message: result }), {
       headers: { "Content-Type": "application/json" },
       status: 200,
     });
