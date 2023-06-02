@@ -1,16 +1,20 @@
 import { NextRequest } from "next/server";
 import { User } from "../../../../types/user";
 import clientPromise from "../../../../utils/connectDB";
-import { useRouter } from "next/router";
 import { Sort, SortDirection } from "mongodb";
 
 export const GET = async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
   const pageString = searchParams.get("page");
-  const page: number = pageString ? parseInt(pageString, 10) : 1;
 
+  let page: number = 0;
+  if (pageString) {
+    page = parseInt(pageString, 10);
+  }
+  let limit: number = 0;
   const limitString = searchParams.get("limit");
-  const limit: number = limitString ? parseInt(limitString, 10) : 10;
+
+  if (limitString) limit = parseInt(limitString, 10);
 
   const sortString = searchParams.get("sort");
 
@@ -20,9 +24,6 @@ export const GET = async (req: NextRequest) => {
   } else {
     sort = "name";
   }
-
-  console.log("sort", sort);
-
   const orderString = searchParams.get("order");
   const order: SortDirection = orderString
     ? (parseInt(orderString, 10) as SortDirection)
@@ -42,23 +43,14 @@ export const GET = async (req: NextRequest) => {
   }
 
   const db = client.db(process.env.DB_NAME);
-
   const skip = page * limit - limit;
-
-  console.log("sort", sort);
-
   const sortField: Sort = sort; // Replace 'fieldName' with the actual field name you want to use for sorting
   const orderField: SortDirection = order; // Replace 1 with the desired sort direction (1 for ascending, -1 for descending)
-
-  console.log("sortField", sortField);
-
-  console.log("orderField", orderField);
-
   const users = await db
     .collection<User>("users")
     .find({})
-    .limit(limit)
-    .skip(skip)
+    .limit(limit == 0 ? 0 : limit)
+    .skip(page == 0 ? 0 : skip)
     .toArray();
 
   //.sort({ [sortField]: orderField })
@@ -87,7 +79,7 @@ export const POST = async (req: any) => {
     const db = client.db(process.env.DB_NAME);
 
     const users: User[] = [];
-    for (let i: number = 0; i < 100; i++) {
+    for (let i: number = 100; i < 200; i++) {
       const name = `User ${i}`;
       const email = `email${i}@gmail.com`;
       const password = `password${i}`;
@@ -101,7 +93,32 @@ export const POST = async (req: any) => {
       headers: { "Content-Type": "application/json" },
       status: 200,
     });
-  } catch (error) {
-    console.log(error);
-  }
+  } catch (error) {}
+};
+
+const GET_USERS_LIMIT = async (req: any) => {
+  try {
+    const client = await clientPromise;
+    if (!process.env.DB_NAME) {
+      return new Response(
+        JSON.stringify({
+          message: "Invalid/Missing environment variable: DB_NAME",
+        }),
+        {
+          headers: { "Content-Type": "application/json" },
+          status: 500,
+        }
+      );
+    }
+
+    const db = client.db(process.env.DB_NAME);
+    const collection = db.collection("users");
+
+    const usersCount = await collection.countDocuments({});
+
+    return new Response(JSON.stringify({ usersCount }), {
+      headers: { "Content-Type": "application/json" },
+      status: 200,
+    });
+  } catch (error) {}
 };

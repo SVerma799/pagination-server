@@ -3,29 +3,40 @@ import { FC } from "react";
 import { User } from "../../../types/user";
 
 interface PaginationProps {
-  items: User[];
+  itemsLength: number;
   pageSize: number;
   currentPage: number;
   onPageChanged: (page: number) => void;
+  onNextPrevClick: (type: string) => void;
 }
 
 const Pagination: FC<PaginationProps> = ({
-  items,
+  itemsLength,
   pageSize,
   currentPage,
   onPageChanged,
+  onNextPrevClick,
 }) => {
-  const pagesCount = items.length / pageSize;
-  const pages = Array.from(
-    { length: (pageSize - 1) / 1 + 1 },
+  let pages = Array.from(
+    { length: itemsLength / pageSize },
     (value, index) => 1 + index * 1
   );
 
-  console.log("pages", pages);
   return (
     <div className="flex justify-center">
       <nav aria-label="Page navigation example" className="mx-auto">
         <ul className="pagination">
+          <li className="page-item">
+            <a
+              className="page-link"
+              onClick={() => {
+                onNextPrevClick("prev");
+              }}
+              style={{ cursor: "pointer" }}
+            >
+              Previous
+            </a>
+          </li>
           {pages.map((page: number, idx: number) => (
             <li
               className={
@@ -44,6 +55,17 @@ const Pagination: FC<PaginationProps> = ({
               </a>
             </li>
           ))}
+          <li className="page-item">
+            <a
+              className="page-link"
+              style={{ cursor: "pointer" }}
+              onClick={() => {
+                onNextPrevClick("next");
+              }}
+            >
+              Next
+            </a>
+          </li>
         </ul>
       </nav>
     </div>

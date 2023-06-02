@@ -8,17 +8,26 @@ import { paginate } from "../../utils/Paginate";
 export default function Home() {
   const [users, setUsers] = useState<User[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
+  let [usersCount, setUsersCount] = useState<number>(0);
   const pageSize = 10;
-  const paginatedUsers: User[] = paginate(users, currentPage, pageSize);
-
   useEffect(() => {
-    const getUsers = async () => {
-      const response = await fetch("/api/users");
-      const data = await response.json();
-      setUsers(data);
-    };
-    getUsers();
+    getUsers(currentPage, pageSize);
+    getUsersCount();
   }, []);
+
+  const getUsersCount = async () => {
+    const response = await fetch(`/api/users/count`);
+    const data = await response.json();
+    setUsersCount(data.usersCount);
+  };
+
+  const getUsers = async (pagenumber: number = 0, limit: number = 0) => {
+    const response = await fetch(
+      `/api/users?page=${pagenumber}&limit=${limit}`
+    );
+    const data = await response.json();
+    setUsers(data);
+  };
 
   function deleteButtonClick(id: any) {
     console.log("Function not implemented.");
@@ -26,6 +35,19 @@ export default function Home() {
 
   function PageChangeHanlder(page: number): void {
     setCurrentPage(page);
+    getUsers(page, pageSize);
+  }
+
+  function onNextPrevClick(type: string): void {
+    if (type === "prev") {
+      if (currentPage === 1) return;
+      setCurrentPage(currentPage - 1);
+      getUsers(currentPage - 1, pageSize);
+    } else {
+      if (currentPage === usersCount / pageSize) return;
+      setCurrentPage(currentPage + 1);
+      getUsers(currentPage + 1, pageSize);
+    }
   }
 
   return (
@@ -44,7 +66,7 @@ export default function Home() {
           </thead>
 
           <tbody>
-            {paginatedUsers.map((item, idx) => (
+            {users.map((item, idx) => (
               <tr key={idx}>
                 <td>{idx + 1}</td>
                 <td>{item.name}</td>
@@ -54,7 +76,6 @@ export default function Home() {
                   <button
                     className="btn btn-danger btn-sm"
                     onClick={() => {
-                      console.log("clicked");
                       //deleteButtonClick(item._id);
                     }}
                   >
@@ -67,10 +88,11 @@ export default function Home() {
         </table>
       </div>
       <Pagination
-        items={users}
+        itemsLength={usersCount}
         currentPage={currentPage}
         pageSize={pageSize}
         onPageChanged={PageChangeHanlder}
+        onNextPrevClick={onNextPrevClick}
       />
     </main>
   );
